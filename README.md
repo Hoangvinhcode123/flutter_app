@@ -1,6 +1,6 @@
 # ☕ ĐƯƠNG Coffee - Mobile E-commerce & Admin Management System
 
-![Project Banner](https://images.unsplash.com/photo-1501339817302-cd4468af3059?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80)
+![Project Banner](assets/images/project_banner.png)
 
 **ĐƯƠNG Coffee** là một hệ sinh thái ứng dụng mua sắm cà phê hiện đại, bao gồm ứng dụng dành cho khách hàng và hệ thống quản trị (Admin Dashboard) chuyên nghiệp. Dự án được xây dựng với mục tiêu mang lại trải nghiệm mua sắm mượt mà, cao cấp và khả năng quản lý vận hành tối ưu.
 
@@ -54,7 +54,7 @@ flutter run
 
 | Khách hàng | Admin Dashboard |
 |---|---|
-| ![Customer App](https://via.placeholder.com/200x400) | ![Admin Dashboard](https://via.placeholder.com/400x200) |
+| ![Customer App](assets/images/customer_app.png) | ![Admin Dashboard](assets/images/admin_dashboard.png) |
 
 ---
 
