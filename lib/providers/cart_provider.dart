@@ -90,8 +90,22 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
+  double _discount = 0;
+  String? _appliedVoucher;
+
+  double get discount => _discount;
+  String? get appliedVoucher => _appliedVoucher;
+
+  void setDiscount(double amount, String? code) {
+    _discount = amount;
+    _appliedVoucher = code;
+    notifyListeners();
+  }
+
   void clearCart() {
     _items.clear();
+    _discount = 0;
+    _appliedVoucher = null;
     notifyListeners();
   }
 }

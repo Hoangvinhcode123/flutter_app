@@ -148,6 +148,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                             const SizedBox(height: 40),
+                            const Text('TIỆN ÍCH', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 16),
+                            _buildQuickLink(context, 'Lịch sử đơn hàng', Icons.list_alt, '/orders'),
+                            _buildQuickLink(context, 'Thông báo', Icons.notifications_none_outlined, '/notifications'),
+                            _buildQuickLink(context, 'Danh sách yêu thích', Icons.favorite_outline, '/wishlist'),
+                            const SizedBox(height: 40),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
@@ -164,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                child: OutlinedButton(
                                  onPressed: () {
                                    Provider.of<AuthProvider>(context, listen: false).logout();
-                                   Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                                   Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                                  },
                                  style: OutlinedButton.styleFrom(
                                    side: const BorderSide(color: Colors.red),
@@ -198,6 +204,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         prefixIcon: Icon(icon, color: const Color(0xFFD3A374)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
+    );
+  }
+
+  Widget _buildQuickLink(BuildContext context, String title, IconData icon, String route) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF132A38)),
+      title: Text(title, style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w500)),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: () => Navigator.pushNamed(context, route),
+      contentPadding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
     );
   }
 }

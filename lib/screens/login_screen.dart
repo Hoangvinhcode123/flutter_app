@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,15 +15,42 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCredentials();
+  }
+
+  void _loadCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _emailController.text = prefs.getString('saved_email') ?? '';
+      _passwordController.text = prefs.getString('saved_password') ?? '';
+      _rememberMe = _emailController.text.isNotEmpty;
+    });
+  }
 
   void _handleLogin() async {
     setState(() => _isLoading = true);
     
     final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
     
     try {
+      // Lưu mật khẩu nếu chọn "Nhớ mật khẩu"
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setString('saved_email', email);
+        await prefs.setString('saved_password', password);
+      } else {
+        await prefs.remove('saved_email');
+        await prefs.remove('saved_password');
+      }
+
       // Đăng nhập qua Provider
-      await Provider.of<AuthProvider>(context, listen: false).login(email, _passwordController.text);
+      await Provider.of<AuthProvider>(context, listen: false).login(email, password);
       
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -35,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(content: Text('Đăng nhập thành công với quyền ADMIN!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
       } else {
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/home');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đăng nhập thành công, chào Khách Hàng!', style: TextStyle(color: Colors.black)), backgroundColor: Color(0xFFD3A374)),
         );
@@ -75,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () => Navigator.pushReplacementNamed(context, '/'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/home'),
                 child: Text(
                   'ĐƯƠNG',
                   style: GoogleFonts.barlowCondensed(
@@ -108,15 +136,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 isPassword: true,
               ),
               const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'Quên mật khẩu?',
-                    style: GoogleFonts.montserrat(color: katinatGold),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) => setState(() => _rememberMe = v!),
+                    activeColor: katinatGold,
+                    side: const BorderSide(color: Colors.white54),
                   ),
-                ),
+                  Text(
+                    'Nhớ mật khẩu',
+                    style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 14),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Quên mật khẩu?',
+                      style: GoogleFonts.montserrat(color: katinatGold),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 40),
               SizedBox(

@@ -25,8 +25,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isOrdering = false;
   bool _showQR = false;
   int? _lastOrderId;
-  double _discount = 0;
-  String? _appliedVoucher;
 
   @override
   void initState() {
@@ -40,19 +38,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _validateVoucher(double total) async {
     if (_voucherController.text.isEmpty) return;
+    final cart = Provider.of<CartProvider>(context, listen: false);
     try {
       final response = await http.post(
         Uri.parse('http://localhost:3000/api/promotions/validate'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'code': _voucherController.text, 'total_price': total * 1000}),
+        body: json.encode({
+          'code': _voucherController.text, 
+          'total_price': total,
+          'items': cart.items.map((i) => {
+            'product_id': i.productId,
+            'name': i.name,
+            'price': i.unitPrice,
+            'quantity': i.quantity,
+          }).toList(),
+        }),
       );
 
       final data = json.decode(response.body);
       if (response.statusCode == 200 && data['valid'] == true) {
-        setState(() {
-          _discount = double.parse(data['discount'].toString()) / 1000;
-          _appliedVoucher = _voucherController.text;
-        });
+        final discountValue = double.parse(data['discount'].toString());
+        cart.setDiscount(discountValue, _voucherController.text);
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Áp dụng mã giảm giá thành công!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
       } else {
         throw Exception(data['message'] ?? 'Mã không hợp lệ');
@@ -88,7 +94,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           }).toList(),
           'payment_method': _selectedPaymentMethod,
           'note': 'Giao tới: ${_addressController.text}',
-          'promo_code': _appliedVoucher,
+          'promo_code': cart.appliedVoucher,
         }),
       );
 
@@ -126,7 +132,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           TextButton(
             onPressed: () {
               Provider.of<CartProvider>(context, listen: false).clearCart();
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
             },
             child: const Text('Về trang chủ'),
           ),
@@ -141,7 +147,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     const Color katinatGold = Color(0xFFD3A374);
     final cart = Provider.of<CartProvider>(context);
     final subtotal = cart.totalAmount;
-    final finalTotal = subtotal - _discount;
+    final finalTotal = subtotal - cart.discount;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -159,7 +165,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     style: GoogleFonts.barlowCondensed(color: katinatBlue, fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 32),
-                  if (_showQR) _buildQRView(finalTotal) else _buildCheckoutForm(subtotal, finalTotal, katinatBlue, katinatGold),
+                  if (_showQR) _buildQRView(finalTotal) else _buildCheckoutForm(cart, subtotal, finalTotal, katinatBlue, katinatGold),
                 ],
               ),
             ),
@@ -170,7 +176,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildCheckoutForm(double subtotal, double finalTotal, Color katinatBlue, Color katinatGold) {
+  Widget _buildCheckoutForm(CartProvider cart, double subtotal, double finalTotal, Color katinatBlue, Color katinatGold) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,14 +240,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     _buildSectionTitle('TÓM TẮT ĐƠN HÀNG'),
                     const Divider(),
-                    _buildPriceRow('Tạm tính', '${subtotal.toStringAsFixed(0)}.000đ'),
-                    if (_discount > 0) _buildPriceRow('Giảm giá', '-${_discount.toStringAsFixed(0)}.000đ', color: Colors.green),
+                    _buildPriceRow('Tạm tính', subtotal),
+                    if (cart.discount > 0) _buildPriceRow('Giảm giá', -cart.discount, color: Colors.green),
                     const Divider(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Tổng cộng', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('${finalTotal.toStringAsFixed(0)}.000đ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFFD3A374))),
+                        Text(_formatPrice(finalTotal), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFFD3A374))),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -271,15 +277,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final amountInt = total.toInt();
     final description = 'THANHTOAN DONHANG ${_lastOrderId}';
     
-    // Thông tin tài khoản thật của ông
+    // Thông tin tài khoản của ông
     const String myAccount = '0817713006';
     const String myName = 'TRAN DUONG HOANG VINH';
 
     if (_selectedPaymentMethod == 'Ví Momo') {
-      return _buildStaticQRView('assets/images/momo_qr.jpg', amountInt);
+      // Tạo mã QR động cho Momo (chuyển tiền cá nhân kèm số tiền)
+      // Định dạng: 2|99|<sdt>|<tên>|<email>|0|0|<số tiền>|<nội dung>|transfer_myqr
+      final momoData = '2|99|$myAccount|${myName.toUpperCase()}||0|0|$amountInt|$description|transfer_myqr';
+      final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(momoData)}';
+      return _buildDynamicQRView(qrUrl, amountInt);
     } else {
-      // MB Bank VietQR - Đã cập nhật STK thật
-      final qrUrl = 'https://img.vietqr.io/image/MB-$myAccount-compact.png?amount=${amountInt}&addInfo=${description}&accountName=${Uri.encodeComponent(myName)}';
+      // MB Bank VietQR - Tự động điền số tiền và nội dung
+      final qrUrl = 'https://img.vietqr.io/image/MB-$myAccount-compact.png?amount=${amountInt}&addInfo=${Uri.encodeComponent(description)}&accountName=${Uri.encodeComponent(myName)}';
       return _buildDynamicQRView(qrUrl, amountInt);
     }
   }
@@ -361,18 +371,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, String value, {Color? color}) {
-    String formattedValue = value;
-    if (value.contains('.000đ')) {
-       final valStr = value.replaceAll('.000đ', '');
-       final valInt = int.tryParse(valStr);
-       if (valInt != null) {
-         formattedValue = '${(valInt * 1000).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ';
-       }
-    }
+  String _formatPrice(double price) {
+    return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ';
+  }
+
+  Widget _buildPriceRow(String label, double value, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label), Text(formattedValue, style: TextStyle(color: color, fontWeight: color != null ? FontWeight.bold : FontWeight.normal))]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+        children: [
+          Text(label), 
+          Text(_formatPrice(value), style: TextStyle(color: color, fontWeight: color != null ? FontWeight.bold : FontWeight.normal))
+        ]
+      ),
     );
   }
 

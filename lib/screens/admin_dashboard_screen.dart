@@ -24,12 +24,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   List<dynamic> _users = [];
   List<dynamic> _products = [];
   List<dynamic> _orders = [];
+  List<dynamic> _promotions = [];
   Map<String, dynamic> _stats = {
     'revenue': 0,
     'pendingOrders': 0,
     'newUsers': 0,
     'outOfStock': 0,
     'recentOrders': []
+  };
+  Map<String, dynamic> _detailedStats = {
+    'daily': [],
+    'monthly': [],
+    'topProducts': []
   };
 
   String _orderFilter = 'Tất cả';
@@ -53,6 +59,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         http.get(Uri.parse('$baseUrl/products'), headers: headers),
         http.get(Uri.parse('$baseUrl/admin/orders'), headers: headers),
         http.get(Uri.parse('$baseUrl/admin/stats'), headers: headers),
+        http.get(Uri.parse('$baseUrl/admin/stats/detailed'), headers: headers),
+        http.get(Uri.parse('$baseUrl/admin/promotions'), headers: headers),
       ]);
 
       if (mounted) {
@@ -70,6 +78,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           if (statsData is Map<String, dynamic>) {
             _stats = statsData;
           }
+
+          final detailedData = json.decode(responses[4].body);
+          if (detailedData is Map<String, dynamic>) {
+            _detailedStats = detailedData;
+          }
+
+          final promoData = json.decode(responses[5].body);
+          _promotions = promoData is List ? promoData : [];
           
           _isLoading = false;
         });
@@ -110,7 +126,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               children: [
                 const SizedBox(height: 40),
                 GestureDetector(
-                  onTap: () => Navigator.pushReplacementNamed(context, '/'),
+                  onTap: () => Navigator.pushReplacementNamed(context, '/home'),
                   child: Text(
                     'ĐƯƠNG ADMIN',
                     style: GoogleFonts.barlowCondensed(
@@ -127,10 +143,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _buildSidebarItem(icon: Icons.shopping_bag, title: 'Quản lý Đơn hàng', isActive: _selectedIndex == 2, onTap: () => setState(() => _selectedIndex = 2)),
                 _buildSidebarItem(icon: Icons.inventory, title: 'Quản lý Kho / Sản phẩm', isActive: _selectedIndex == 3, onTap: () => setState(() => _selectedIndex = 3)),
                 _buildSidebarItem(icon: Icons.bar_chart, title: 'Báo cáo Tài chính', isActive: _selectedIndex == 4, onTap: () => setState(() => _selectedIndex = 4)),
+                _buildSidebarItem(icon: Icons.confirmation_number, title: 'Quản lý Voucher', isActive: _selectedIndex == 5, onTap: () => setState(() => _selectedIndex = 5)),
+                _buildSidebarItem(icon: Icons.notifications_active, title: 'Gửi Thông Báo', isActive: _selectedIndex == 6, onTap: () => setState(() => _selectedIndex = 6)),
                 const Spacer(),
                 _buildSidebarItem(icon: Icons.logout, title: 'Đăng xuất', onTap: () {
                   Provider.of<AuthProvider>(context, listen: false).logout();
-                  Navigator.pushReplacementNamed(context, '/');
+                  Navigator.pushReplacementNamed(context, '/home');
                 }),
                 const SizedBox(height: 20),
               ],
@@ -182,7 +200,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1: return 'Quản lý Hệ thống Cấp quyền';
       case 2: return 'Trung tâm Xử lý Đơn hàng';
       case 3: return 'Quản lý Danh mục Sản phẩm';
-      case 4: return 'Báo cáo & Phân tích';
+      case 4: return 'Báo cáo Tài chính & Phân tích';
+      case 5: return 'Quản lý Chương trình Voucher';
+      case 6: return 'Hệ thống Gửi thông báo BroadCast';
       default: return 'Dashboard';
     }
   }
@@ -193,6 +213,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1: return _buildUserManagementContent();
       case 2: return _buildOrdersManagementContent();
       case 3: return _buildProductsManagementContent();
+      case 4: return _buildFinancialReportContent();
+      case 5: return _buildVoucherManagementContent();
+      case 6: return _buildNotificationBroadcastContent();
       default: return const Center(child: Text('Tính năng đang phát triển'));
     }
   }
@@ -862,5 +885,396 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ],
       ),
     );
+  }
+
+  // ==========================================
+  // VIEW 4: BÁO CÁO TÀI CHÍNH
+  // ==========================================
+  Widget _buildFinancialReportContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildKpiCard(
+            title: 'Tổng doanh thu (Hoàn tất)', 
+            value: '${_stats['revenue']}đ', 
+            icon: Icons.account_balance_wallet, 
+            color: katinatGold
+          ),
+          const SizedBox(height: 30),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildReportBox(
+                  title: 'Doanh thu 7 ngày gần nhất',
+                  child: _buildSimpleTable(
+                    headers: ['Ngày', 'Doanh thu'],
+                    rows: (_detailedStats['daily'] as List).map((item) => [
+                      item['date'].toString(),
+                      '${item['amount']}đ'
+                    ]).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _buildReportBox(
+                  title: 'Doanh thu 6 tháng gần nhất',
+                  child: _buildSimpleTable(
+                    headers: ['Tháng', 'Doanh thu'],
+                    rows: (_detailedStats['monthly'] as List).map((item) => [
+                      item['month'].toString().trim(),
+                      '${item['amount']}đ'
+                    ]).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          _buildReportBox(
+            title: 'Top 5 sản phẩm bán chạy nhất',
+            child: _buildSimpleTable(
+              headers: ['Tên sản phẩm', 'Số lượng đã bán', 'Tổng doanh thu'],
+              rows: (_detailedStats['topProducts'] as List).map((item) => [
+                item['name'].toString(),
+                item['sales'].toString(),
+                '${item['revenue']}đ'
+              ]).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportBox({required String title, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16, color: katinatBlue)),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleTable({required List<String> headers, required List<List<String>> rows}) {
+    if (rows.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Chưa có dữ liệu')));
+    return Table(
+      border: TableBorder(horizontalInside: BorderSide(color: Colors.grey[100]!, width: 1)),
+      children: [
+        TableRow(
+          children: headers.map((h) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(h, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          )).toList(),
+        ),
+        ...rows.map((row) => TableRow(
+          children: row.map((cell) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(cell, style: TextStyle(color: katinatBlue.withOpacity(0.8))),
+          )).toList(),
+        )),
+      ],
+    );
+  }
+
+  // ==========================================
+  // VIEW 5: QUẢN LÝ VOUCHER
+  // ==========================================
+  Widget _buildVoucherManagementContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Danh sách Mã Khuyến Mãi', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+              ElevatedButton.icon(
+                onPressed: () => _showVoucherFormDialog(null),
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm Voucher mới'),
+                style: ElevatedButton.styleFrom(backgroundColor: katinatGold, foregroundColor: Colors.black),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              children: [
+                _buildVoucherHeader(),
+                const Divider(height: 1),
+                if (_promotions.isEmpty)
+                  const Padding(padding: EdgeInsets.all(40), child: Text('Chưa có voucher nào'))
+                else
+                  ..._promotions.map((p) => _buildVoucherRow(p)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoucherHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      color: Colors.grey[50],
+      child: const Row(
+        children: [
+          Expanded(flex: 2, child: Text('Tiêu đề', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(flex: 1, child: Text('Mã Code', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(flex: 1, child: Text('Giảm giá', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(flex: 1, child: Text('Đơn tối thiểu', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(flex: 1, child: Text('Trạng thái', style: TextStyle(fontWeight: FontWeight.bold))),
+          SizedBox(width: 80, child: Text('Thao tác', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoucherRow(Map<String, dynamic> p) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[100]!))),
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: Text(p['title'] ?? '')),
+          Expanded(flex: 1, child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: katinatGold.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+            child: Text(p['code'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: katinatGold)),
+          )),
+          Expanded(flex: 1, child: Text(
+            p['promo_type'] == 'bogo' 
+              ? 'Mua ${p['buy_qty']} tặng ${p['get_qty']}'
+              : (double.tryParse(p['discount_amount']?.toString() ?? '0')! > 0 
+                  ? '${p['discount_amount']}đ' 
+                  : '${p['discount']}%')
+          )),
+          Expanded(flex: 1, child: Text('${p['min_order']}đ')),
+          Expanded(flex: 1, child: Switch(
+            value: p['is_active'] ?? true, 
+            activeColor: katinatGold,
+            onChanged: (v) => _updateVoucherStatus(p['id'].toString(), v),
+          )),
+          SizedBox(
+            width: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(icon: const Icon(Icons.edit, size: 18, color: Colors.blue), onPressed: () => _showVoucherFormDialog(p)),
+                IconButton(icon: const Icon(Icons.delete, size: 18, color: Colors.red), onPressed: () => _deleteVoucher(p['id'].toString())),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // VIEW 6: GỬI THÔNG BÁO (BROADCAST)
+  // ==========================================
+  Widget _buildNotificationBroadcastContent() {
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    final scheduleController = TextEditingController(text: DateTime.now().add(const Duration(minutes: 5)).toString().substring(0, 16));
+
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Gửi thông báo mới cho tất cả User', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 8),
+              const Text('Thông báo này sẽ xuất hiện trong mục Thông báo của tất cả người dùng trên ứng dụng.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+              const SizedBox(height: 30),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Tiêu đề thông báo', border: OutlineInputBorder(), prefixIcon: Icon(Icons.title)),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: bodyController,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Nội dung thông báo', border: OutlineInputBorder(), alignLabelWithHint: true, prefixIcon: Icon(Icons.message)),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: scheduleController,
+                decoration: const InputDecoration(labelText: 'Thời gian gửi (YYYY-MM-DD HH:mm)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.timer)),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () => _sendBroadcast(titleController.text, bodyController.text, scheduleController.text),
+                  icon: const Icon(Icons.send),
+                  label: const Text('GỬI THÔNG BÁO'),
+                  style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper Methods for Voucher
+  Future<void> _updateVoucherStatus(String id, bool status) async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    await http.put(
+      Uri.parse('$baseUrl/admin/promotions/$id'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: json.encode({'is_active': status}),
+    );
+    _fetchAllData();
+  }
+
+  Future<void> _deleteVoucher(String id) async {
+    final confirm = await showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Xác nhận xoá'),
+      content: const Text('Bạn có chắc muốn xoá voucher này không?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xoá', style: TextStyle(color: Colors.red))),
+      ],
+    ));
+    if (confirm == true) {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      await http.delete(Uri.parse('$baseUrl/admin/promotions/$id'), headers: {'Authorization': 'Bearer $token'});
+      _fetchAllData();
+    }
+  }
+
+  void _showVoucherFormDialog(Map<String, dynamic>? promo) {
+    final isEditing = promo != null;
+    final titleController = TextEditingController(text: isEditing ? promo['title'] : '');
+    final codeController = TextEditingController(text: isEditing ? promo['code'] : '');
+    final discountController = TextEditingController(text: isEditing ? promo['discount'].toString() : '0');
+    final discountAmountController = TextEditingController(text: isEditing ? (promo['discount_amount'] ?? 0).toString() : '0');
+    final buyQtyController = TextEditingController(text: isEditing ? (promo['buy_qty'] ?? 0).toString() : '0');
+    final getQtyController = TextEditingController(text: isEditing ? (promo['get_qty'] ?? 0).toString() : '0');
+    String promoType = isEditing ? (promo['promo_type'] ?? 'discount') : 'discount';
+    final minOrderController = TextEditingController(text: isEditing ? promo['min_order'].toString() : '0');
+    final descController = TextEditingController(text: isEditing ? promo['description'] : '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(isEditing ? 'Sửa Voucher' : 'Thêm Voucher mới'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Tên chương trình')),
+                TextField(controller: codeController, decoration: const InputDecoration(labelText: 'Mã Voucher')),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: promoType,
+                  decoration: const InputDecoration(labelText: 'Loại ưu đãi'),
+                  items: const [
+                    DropdownMenuItem(value: 'discount', child: Text('Giảm giá (%) hoặc Số tiền')),
+                    DropdownMenuItem(value: 'bogo', child: Text('Mua X Tặng Y')),
+                  ],
+                  onChanged: (v) => setDialogState(() => promoType = v!),
+                ),
+                if (promoType == 'discount') ...[
+                  TextField(controller: discountController, decoration: const InputDecoration(labelText: 'Phần trăm giảm (%)'), keyboardType: TextInputType.number),
+                  TextField(controller: discountAmountController, decoration: const InputDecoration(labelText: 'Số tiền giảm cố định (đ)'), keyboardType: TextInputType.number),
+                ] else ...[
+                  TextField(controller: buyQtyController, decoration: const InputDecoration(labelText: 'Số lượng mua (X)'), keyboardType: TextInputType.number),
+                  TextField(controller: getQtyController, decoration: const InputDecoration(labelText: 'Số lượng tặng (Y)'), keyboardType: TextInputType.number),
+                ],
+                TextField(controller: minOrderController, decoration: const InputDecoration(labelText: 'Đơn hàng tối thiểu (đ)'), keyboardType: TextInputType.number),
+                TextField(controller: descController, decoration: const InputDecoration(labelText: 'Mô tả chi tiết'), maxLines: 2),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final token = Provider.of<AuthProvider>(context, listen: false).token;
+                  final data = {
+                    'title': titleController.text,
+                    'code': codeController.text,
+                    'promo_type': promoType,
+                    'discount': int.tryParse(discountController.text) ?? 0,
+                    'discount_amount': int.tryParse(discountAmountController.text) ?? 0,
+                    'buy_qty': int.tryParse(buyQtyController.text) ?? 0,
+                    'get_qty': int.tryParse(getQtyController.text) ?? 0,
+                    'min_order': int.tryParse(minOrderController.text) ?? 0,
+                    'description': descController.text,
+                    'is_active': isEditing ? promo['is_active'] : true,
+                  };
+                  
+                  final url = isEditing 
+                    ? Uri.parse('$baseUrl/admin/promotions/${promo['id']}')
+                    : Uri.parse('$baseUrl/admin/promotions');
+                  
+                  final response = await (isEditing 
+                    ? http.put(url, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: json.encode(data))
+                    : http.post(url, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: json.encode(data)));
+
+                  if (response.statusCode == 200 || response.statusCode == 201) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lưu Voucher thành công!'), backgroundColor: Colors.green));
+                      Navigator.pop(ctx);
+                      _fetchAllData();
+                    }
+                  } else {
+                    throw Exception('Lỗi server: ${response.statusCode}');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, foregroundColor: Colors.white),
+              child: const Text('Lưu Voucher'),
+            ),
+        ],
+      ),
+    ));
+  }
+
+  Future<void> _sendBroadcast(String title, String body, String scheduledAt) async {
+    if (title.isEmpty || body.isEmpty) return;
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    final response = await http.post(
+      Uri.parse('$baseUrl/admin/notifications/broadcast'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: json.encode({'title': title, 'body': body, 'scheduled_at': scheduledAt}),
+    );
+    if (response.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi thông báo thành công cho toàn bộ User!'), backgroundColor: Colors.green));
+    }
   }
 }

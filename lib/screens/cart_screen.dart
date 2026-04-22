@@ -97,43 +97,44 @@ class CartScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'TÓM TẮT ĐƠN HÀNG',
-                                style: GoogleFonts.montserrat(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                Text(
+                                  'TÓM TẮT ĐƠN HÀNG',
+                                  style: GoogleFonts.montserrat(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 24),
-                              _buildSummaryRow('Tạm tính', '${total.toStringAsFixed(0)}.000đ'.replaceAll('000.000', '000')),
-                              const SizedBox(height: 12),
-                              _buildSummaryRow('Phí vận chuyển', 'Liên hệ'),
-                              const SizedBox(height: 12),
-                              _buildSummaryRow('Khuyến mãi', '-0đ'),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16.0),
-                                child: Divider(),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'TỔNG CỘNG',
-                                    style: GoogleFonts.montserrat(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                const SizedBox(height: 20),
+                                // Voucher Section in Cart
+                                _buildSummaryRow('Tạm tính', _formatPrice(total)),
+                                const SizedBox(height: 12),
+                                _buildSummaryRow('Phí vận chuyển', 'Liên hệ'),
+                                const SizedBox(height: 12),
+                                _buildSummaryRow('Khuyến mãi', '-${_formatPrice(cartProvider.discount)}', color: Colors.green),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  child: Divider(),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'TỔNG CỘNG',
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '${total.toStringAsFixed(0)}.000đ'.replaceAll('000.000', '000'),
-                                    style: GoogleFonts.montserrat(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 24,
-                                      color: katinatGold,
+                                    Text(
+                                      _formatPrice(total - cartProvider.discount),
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                        color: katinatGold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
                               const SizedBox(height: 32),
                               SizedBox(
                                 width: double.infinity,
@@ -269,7 +270,11 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  String _formatPrice(double price) {
+    return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ';
+  }
+
+  Widget _buildSummaryRow(String label, String value, {Color? color}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -279,7 +284,7 @@ class CartScreen extends StatelessWidget {
         ),
         Text(
           value,
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, color: color),
         ),
       ],
     );

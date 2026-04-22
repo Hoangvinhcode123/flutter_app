@@ -19,7 +19,15 @@ import 'screens/notifications_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -27,29 +35,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-      ],
-      child: MaterialApp(
+    return MaterialApp(
         debugShowCheckedModeBanner: false,
       title: 'ĐƯƠNG',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC39366)),
       ),
-      home: FutureBuilder(
-        future: Provider.of<AuthProvider>(context, listen: false).tryAutoLogin(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }
-          return const HomeScreen();
-        },
+      home: Builder(
+        builder: (context) => FutureBuilder(
+          future: Provider.of<AuthProvider>(context, listen: false).tryAutoLogin(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            return const HomeScreen();
+          },
+        ),
       ),
       routes: {
-        '/': (context) => const HomeScreen(),
         '/home': (context) => const HomeScreen(),
         '/about': (context) => const AboutScreen(),
         '/news': (context) => const NewsScreen(),
@@ -65,6 +69,6 @@ class MyApp extends StatelessWidget {
         '/wishlist': (context) => const WishlistScreen(),
         '/notifications': (context) => const NotificationsScreen(),
       },
-    ));
+    );
   }
 }

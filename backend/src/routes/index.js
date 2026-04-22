@@ -22,6 +22,7 @@ router.get('/admin/users', authMw, adminMw, authCtrl.getAllUsers);
 router.put('/admin/users/:id', authMw, adminMw, authCtrl.adminUpdateUser);
 router.delete('/admin/users/:id', authMw, adminMw, authCtrl.deleteUser);
 router.get('/admin/stats', authMw, adminMw, miscCtrl.getStats);
+router.get('/admin/stats/detailed', authMw, adminMw, miscCtrl.getDetailedStats);
 
 router.get('/products', productCtrl.getAll);
 router.get('/products/:id', productCtrl.getOne);
@@ -51,6 +52,13 @@ router.post('/promotions/validate', miscCtrl.validatePromo);
 router.get('/notifications', authMw, miscCtrl.getNotifications);
 router.put('/notifications/:id/read', authMw, miscCtrl.markRead);
 router.get('/loyalty', authMw, miscCtrl.getLoyalty);
+// Admin Promotion Management
+router.get('/admin/promotions', authMw, adminMw, miscCtrl.adminGetAllPromotions);
+router.post('/admin/promotions', authMw, adminMw, miscCtrl.createPromotion);
+router.put('/admin/promotions/:id', authMw, adminMw, miscCtrl.updatePromotion);
+router.delete('/admin/promotions/:id', authMw, adminMw, miscCtrl.deletePromotion);
+// Admin Notifications
+router.post('/admin/notifications/broadcast', authMw, adminMw, miscCtrl.broadcastNotification);
 
 // Blogs
 router.get('/blogs', blogCtrl.getAll);

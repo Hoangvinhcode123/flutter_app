@@ -75,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () => Navigator.pushReplacementNamed(context, '/'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/home'),
                 child: Text(
                   'ĐƯƠNG',
                   style: GoogleFonts.barlowCondensed(

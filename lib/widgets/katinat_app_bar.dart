@@ -55,28 +55,17 @@ class KatinatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.person_outline, color: Colors.white),
-          tooltip: auth.isLoggedIn ? 'Cài đặt tài khoản' : 'Đăng nhập',
-          onPressed: () => Navigator.pushNamed(context, auth.isLoggedIn ? '/profile' : '/login'),
-        ),
         if (auth.isLoggedIn)
           IconButton(
-            icon: const Icon(Icons.notifications_none_outlined, color: Colors.white),
-            tooltip: 'Thông báo',
-            onPressed: () => Navigator.pushNamed(context, '/notifications'),
-          ),
-        if (auth.isLoggedIn)
+            icon: const Icon(Icons.person_outline, color: Colors.white),
+            tooltip: 'Cài đặt tài khoản',
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          )
+        else
           IconButton(
-            icon: const Icon(Icons.favorite_outline, color: Colors.white),
-            tooltip: 'Danh sách yêu thích',
-            onPressed: () => Navigator.pushNamed(context, '/wishlist'),
-          ),
-        if (auth.isLoggedIn)
-          IconButton(
-            icon: const Icon(Icons.list_alt, color: Colors.white),
-            tooltip: 'Lịch sử đơn hàng',
-            onPressed: () => Navigator.pushNamed(context, '/orders'),
+            icon: const Icon(Icons.person_outline, color: Colors.white),
+            tooltip: 'Đăng nhập',
+            onPressed: () => Navigator.pushNamed(context, '/login'),
           ),
         IconButton(
           icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
@@ -88,15 +77,6 @@ class KatinatAppBar extends StatelessWidget implements PreferredSizeWidget {
             icon: const Icon(Icons.admin_panel_settings_outlined, color: Colors.white),
             tooltip: 'Quản trị',
             onPressed: () => Navigator.pushNamed(context, '/admin'),
-          ),
-        if (auth.isLoggedIn)
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            tooltip: 'Đăng xuất',
-            onPressed: () {
-              auth.logout();
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-            },
           ),
         const SizedBox(width: 8),
       ],

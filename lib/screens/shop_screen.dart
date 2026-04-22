@@ -38,8 +38,13 @@ class _ShopScreenState extends State<ShopScreen> {
       final catRes = await http.get(Uri.parse('http://localhost:3000/api/categories'));
       if (mounted) {
         setState(() {
-          _categories = json.decode(catRes.body);
-          _categories.insert(0, {'id': null, 'name': 'Tất cả'});
+          final List<dynamic> fetchedCategories = json.decode(catRes.body);
+          // Kiểm tra xem backend đã có mục "Tất cả" chưa để tránh trùng lặp
+          bool hasAll = fetchedCategories.any((cat) => cat['name'].toString().toLowerCase() == 'tất cả');
+          if (!hasAll) {
+            fetchedCategories.insert(0, {'id': null, 'name': 'Tất cả'});
+          }
+          _categories = fetchedCategories;
         });
       }
       await _fetchProducts();
