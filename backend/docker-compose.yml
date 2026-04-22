@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  duong_db:
+    image: postgres:16
+    container_name: duong_db
+    restart: always
+    environment:
+      POSTGRES_DB: duong_coffee
+      POSTGRES_USER: duong_user
+      POSTGRES_PASSWORD: duong_pass_2024
+    ports:
+      - "5433:5432"
+    volumes:
+      - duong_db_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U duong_user -d duong_coffee"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  duong_api:
+    build: .
+    container_name: duong_api
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: duong_db
+      DB_PORT: 5432
+      DB_NAME: duong_coffee
+      DB_USER: duong_user
+      DB_PASSWORD: duong_pass_2024
+      JWT_SECRET: duong_jwt_secret_key_2024_change_in_production
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      duong_db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  duong_db_data:
