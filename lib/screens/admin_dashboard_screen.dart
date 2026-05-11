@@ -19,7 +19,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   int _selectedIndex = 0; 
   bool _isLoading = true;
-  final String baseUrl = 'http://localhost:3000/api'; // Giả sử chạy local
+  final String baseUrl = 'http://127.0.0.1:3000/api';
   
   List<dynamic> _users = [];
   List<dynamic> _products = [];
@@ -101,6 +101,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  bool get isMobile => MediaQuery.of(context).size.width < 1000;
+
   @override
   Widget build(BuildContext context) {
     // Route Guard: Nếu không phải admin thì đá về Shop
@@ -112,77 +114,88 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    Widget sidebar = Container(
+      width: 250,
+      color: katinatBlue,
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          GestureDetector(
+            onTap: () => Navigator.pushReplacementNamed(context, '/home'),
+            child: Text(
+              'ĐƯƠNG ADMIN',
+              style: GoogleFonts.barlowCondensed(
+                color: katinatGold,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          _buildSidebarItem(icon: Icons.dashboard, title: 'Tổng quan', isActive: _selectedIndex == 0, onTap: () { setState(() => _selectedIndex = 0); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.people, title: 'Nhân Sự & Phân Quyền', isActive: _selectedIndex == 1, onTap: () { setState(() => _selectedIndex = 1); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.shopping_bag, title: 'Quản lý Đơn hàng', isActive: _selectedIndex == 2, onTap: () { setState(() => _selectedIndex = 2); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.inventory, title: 'Quản lý Kho / Sản phẩm', isActive: _selectedIndex == 3, onTap: () { setState(() => _selectedIndex = 3); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.bar_chart, title: 'Báo cáo Tài chính', isActive: _selectedIndex == 4, onTap: () { setState(() => _selectedIndex = 4); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.confirmation_number, title: 'Quản lý Voucher', isActive: _selectedIndex == 5, onTap: () { setState(() => _selectedIndex = 5); if (isMobile) Navigator.pop(context); }),
+          _buildSidebarItem(icon: Icons.notifications_active, title: 'Gửi Thông Báo', isActive: _selectedIndex == 6, onTap: () { setState(() => _selectedIndex = 6); if (isMobile) Navigator.pop(context); }),
+          const Spacer(),
+          _buildSidebarItem(icon: Icons.logout, title: 'Đăng xuất', onTap: () {
+            Provider.of<AuthProvider>(context, listen: false).logout();
+            Navigator.pushReplacementNamed(context, '/home');
+          }),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      drawer: isMobile ? Drawer(child: sidebar) : null,
+      appBar: isMobile ? AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: katinatBlue),
+        title: Text(
+          _getHeaderTitle(),
+          style: GoogleFonts.montserrat(color: katinatBlue, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ) : null,
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : Row(
         children: [
-          // Sidebar Menu
-          Container(
-            width: 250,
-            color: katinatBlue,
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: () => Navigator.pushReplacementNamed(context, '/home'),
-                  child: Text(
-                    'ĐƯƠNG ADMIN',
-                    style: GoogleFonts.barlowCondensed(
-                      color: katinatGold,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                _buildSidebarItem(icon: Icons.dashboard, title: 'Tổng quan', isActive: _selectedIndex == 0, onTap: () => setState(() => _selectedIndex = 0)),
-                _buildSidebarItem(icon: Icons.people, title: 'Nhân Sự & Phân Quyền', isActive: _selectedIndex == 1, onTap: () => setState(() => _selectedIndex = 1)),
-                _buildSidebarItem(icon: Icons.shopping_bag, title: 'Quản lý Đơn hàng', isActive: _selectedIndex == 2, onTap: () => setState(() => _selectedIndex = 2)),
-                _buildSidebarItem(icon: Icons.inventory, title: 'Quản lý Kho / Sản phẩm', isActive: _selectedIndex == 3, onTap: () => setState(() => _selectedIndex = 3)),
-                _buildSidebarItem(icon: Icons.bar_chart, title: 'Báo cáo Tài chính', isActive: _selectedIndex == 4, onTap: () => setState(() => _selectedIndex = 4)),
-                _buildSidebarItem(icon: Icons.confirmation_number, title: 'Quản lý Voucher', isActive: _selectedIndex == 5, onTap: () => setState(() => _selectedIndex = 5)),
-                _buildSidebarItem(icon: Icons.notifications_active, title: 'Gửi Thông Báo', isActive: _selectedIndex == 6, onTap: () => setState(() => _selectedIndex = 6)),
-                const Spacer(),
-                _buildSidebarItem(icon: Icons.logout, title: 'Đăng xuất', onTap: () {
-                  Provider.of<AuthProvider>(context, listen: false).logout();
-                  Navigator.pushReplacementNamed(context, '/home');
-                }),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
+          // Sidebar Menu (only on Desktop)
+          if (!isMobile) sidebar,
           // Main Content Area
           Expanded(
             child: Column(
               children: [
-                // Header
-                Container(
-                  height: 70,
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-                    children: [
-                      Text(
-                        _getHeaderTitle(),
-                        style: GoogleFonts.montserrat(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                // Header (only on Desktop)
+                if (!isMobile)
+                  Container(
+                    height: 70,
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      children: [
+                        Text(
+                          _getHeaderTitle(),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.notifications_none),
-                      const SizedBox(width: 20),
-                      const CircleAvatar(
-                        backgroundColor: katinatGold,
-                        child: Icon(Icons.person, color: Colors.white),
-                      )
-                    ],
+                        const Spacer(),
+                        const Icon(Icons.notifications_none),
+                        const CircleAvatar(
+                          backgroundColor: katinatGold,
+                          child: Icon(Icons.person, color: Colors.white),
+                        )
+                      ],
+                    ),
                   ),
-                ),
-                // Dynamic Content
                 Expanded(
                   child: _buildCurrentContent(),
                 )
@@ -220,11 +233,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  // ==========================================
-  // VIEW 0: TỔNG QUAN (DASHBOARD)
-  // ==========================================
   Widget _buildDashboardContent() {
     const Color katinatGold = Color(0xFFD3A374);
+    final bool isMobile = MediaQuery.of(context).size.width < 1000;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -234,25 +246,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                SizedBox(width: 220, child: _buildKpiCard(title: 'Doanh thu hôm nay', value: '${_stats['revenue']}đ', icon: Icons.attach_money, color: Colors.green)),
-                const SizedBox(width: 20),
-                SizedBox(width: 220, child: _buildKpiCard(title: 'Đơn hàng mới', value: '${_stats['pendingOrders']}', icon: Icons.shopping_cart, color: Colors.blue)),
-                const SizedBox(width: 20),
-                SizedBox(width: 220, child: _buildKpiCard(title: 'Khách hàng mới', value: '${_stats['newUsers']}', icon: Icons.person_add, color: Colors.orange)),
-                const SizedBox(width: 20),
-                SizedBox(width: 220, child: _buildKpiCard(title: 'Sp hết hàng', value: '${_stats['outOfStock']}', icon: Icons.warning, color: Colors.red)),
+                SizedBox(width: 200, child: _buildKpiCard(title: 'Doanh thu', value: '${_stats['revenue'] ?? 0}đ', icon: Icons.attach_money, color: Colors.green)),
+                const SizedBox(width: 12),
+                SizedBox(width: 200, child: _buildKpiCard(title: 'Đơn mới', value: '${_stats['pendingOrders'] ?? 0}', icon: Icons.shopping_cart, color: Colors.blue)),
+                const SizedBox(width: 12),
+                SizedBox(width: 200, child: _buildKpiCard(title: 'Khách mới', value: '${_stats['newUsers'] ?? 0}', icon: Icons.person_add, color: Colors.orange)),
+                const SizedBox(width: 12),
+                SizedBox(width: 200, child: _buildKpiCard(title: 'Hết hàng', value: '${_stats['outOfStock'] ?? 0}', icon: Icons.warning, color: Colors.red)),
               ],
             ),
           ),
           const SizedBox(height: 30),
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 2,
+                flex: isMobile ? 0 : 2,
                 child: Container(
                   height: 400,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,19 +273,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Text('Đơn hàng cần xử lý gấp', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
                       const Divider(),
                       if (_stats['recentOrders'] != null)
-                        ...(_stats['recentOrders'] as List).map((o) => _buildRecentOrderRow(o['id'], o['customer'], o['total'], o['status']))
+                        Expanded(
+                          child: ListView(
+                            children: (_stats['recentOrders'] as List).map((o) => _buildRecentOrderRow(o['id'], o['customer'], o['total'], o['status'])).toList(),
+                          ),
+                        )
                       else
                         const Center(child: Text('Không có đơn hàng mới')),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              if (!isMobile) const SizedBox(width: 20) else const SizedBox(height: 20),
               Expanded(
-                flex: 1,
+                flex: isMobile ? 0 : 1,
                 child: Container(
                   height: 400,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,9 +315,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // ==========================================
-  // VIEW 1: QUẢN LÝ TÀI KHOẢN (USER/ADMIN)
-  // ==========================================
   Widget _buildUserManagementContent() {
     const Color katinatBlue = Color(0xFF132A38);
 
@@ -309,38 +323,46 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               Text(
-                'Danh sách Cấp quyền Quản trị viên (Audit Trail)',
+                'Danh sách Cấp quyền Quản trị viên',
                 style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+              if (isMobile) const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () => _showUserFormDialog(null),
                 icon: const Icon(Icons.add, color: Colors.white),
                 label: const Text('Thêm QTV', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+                style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               )
             ],
           ),
           const SizedBox(height: 24),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
-              // Bọc cuộn ngang để fix lỗi RenderFlex Overflow
-              child: ListView(
-                padding: const EdgeInsets.all(0),
-                children: [
-                  _buildAdminUserHeader(),
-                  const Divider(height: 1),
-                  ..._users.map((u) => Column(
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: 900,
+                  child: ListView(
+                    padding: const EdgeInsets.all(0),
                     children: [
-                      _buildAdminUserRow(u['id'].toString(), u['name'] ?? '', u['email'] ?? '', u['role'] ?? '', u['createdBy'] ?? 'Hệ Thống', u['isActive'] ?? true),
+                      _buildAdminUserHeader(),
                       const Divider(height: 1),
+                      ..._users.map((u) => Column(
+                        children: [
+                          _buildAdminUserRow(u['id'].toString(), u['name'] ?? '', u['email'] ?? '', u['role'] ?? '', u['createdBy'] ?? 'Hệ Thống', u['isActive'] ?? true),
+                          const Divider(height: 1),
+                        ],
+                      )),
                     ],
-                  )),
-                ],
+                  ),
+                ),
               ),
             ),
           )
@@ -349,9 +371,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // ==========================================
-  // VIEW 2: QUẢN LÝ ĐƠN HÀNG (ORDERS)
-  // ==========================================
   Widget _buildOrdersManagementContent() {
     int pendingCount = _orders.where((o) => o['status'] == 'pending' || o['status'] == 'Chờ xác nhận').length;
     int shippingCount = _orders.where((o) => o['status'] == 'Đang giao').length;
@@ -368,40 +387,52 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               Text('Bộ lọc đơn hàng', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  GestureDetector(onTap: () => setState(() => _orderFilter = 'Tất cả'), child: _buildFilterChip('Tất cả', _orderFilter == 'Tất cả')),
-                  const SizedBox(width: 8),
-                  GestureDetector(onTap: () => setState(() => _orderFilter = 'Đang chờ'), child: _buildFilterChip('Đang chờ ($pendingCount)', _orderFilter == 'Đang chờ')),
-                  const SizedBox(width: 8),
-                  GestureDetector(onTap: () => setState(() => _orderFilter = 'Đang giao'), child: _buildFilterChip('Đang giao ($shippingCount)', _orderFilter == 'Đang giao')),
-                ],
+              if (isMobile) const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    GestureDetector(onTap: () => setState(() => _orderFilter = 'Tất cả'), child: _buildFilterChip('Tất cả', _orderFilter == 'Tất cả')),
+                    const SizedBox(width: 8),
+                    GestureDetector(onTap: () => setState(() => _orderFilter = 'Đang chờ'), child: _buildFilterChip('Đang chờ ($pendingCount)', _orderFilter == 'Đang chờ')),
+                    const SizedBox(width: 8),
+                    GestureDetector(onTap: () => setState(() => _orderFilter = 'Đang giao'), child: _buildFilterChip('Đang giao ($shippingCount)', _orderFilter == 'Đang giao')),
+                  ],
+                ),
               )
             ],
           ),
           const SizedBox(height: 24),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
               child: filteredOrders.isEmpty 
                 ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey), const SizedBox(height: 16), Text('Không có đơn hàng nào', style: TextStyle(color: Colors.grey[500], fontSize: 16))]))
-                : ListView(
-                  padding: const EdgeInsets.all(0),
-                  children: [
-                    _buildOrderHeaderRow(),
-                    const Divider(height: 1),
-                    ...filteredOrders.map((o) => Column(
-                      children: [
-                        _buildOrderDataRow(o['id'].toString(), o['created_at'] ?? '', o['user_name'] ?? 'Khách', o['user_phone'] ?? '', '${o['total_price']}đ', o['status'] ?? 'Chờ'),
-                        const Divider(height: 1),
-                      ],
-                    )),
-                  ],
-                ),
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: 900,
+                      child: ListView(
+                        padding: const EdgeInsets.all(0),
+                        children: [
+                          _buildOrderHeaderRow(),
+                          const Divider(height: 1),
+                          ...filteredOrders.map((o) => Column(
+                            children: [
+                              _buildOrderDataRow(o['id'].toString(), o['created_at'] ?? '', o['user_name'] ?? 'Khách', o['user_phone'] ?? '', '${o['total_price']}đ', o['status'] ?? 'Chờ'),
+                              const Divider(height: 1),
+                            ],
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
             ),
           )
         ],
@@ -417,34 +448,53 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               Text('Kho Sản Phẩm', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold)),
+              if (isMobile) const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () => _showProductFormDialog(null),
                 icon: const Icon(Icons.add, color: Colors.white),
                 label: const Text('Thêm Sản Phẩm', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+                style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               )
             ],
           ),
           const SizedBox(height: 24),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
-              child: ListView(
-                padding: const EdgeInsets.all(0),
-                children: [
-                  _buildProductHeaderRow(),
-                  const Divider(height: 1),
-                  ..._products.map((p) => Column(
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: 900,
+                  child: ListView(
+                    padding: const EdgeInsets.all(0),
                     children: [
-                      _buildProductDataRow(p['image_url'] ?? '', p['id'].toString(), p['name'] ?? '', p['category_name'] ?? '', '${p['price']}đ', p['stock'] ?? 0, p['is_available'] ?? true),
+                      _buildProductHeaderRow(),
                       const Divider(height: 1),
+                      ..._products.map((p) => Column(
+                        children: [
+                          _buildProductDataRow(
+                            (p['image_url'] != null && (p['image_url'].toString().startsWith('http') || p['image_url'].toString().startsWith('assets/')))
+                              ? p['image_url'].toString()
+                              : 'http://127.0.0.1:3000${p['image_url'] ?? ''}',
+                            p['id'].toString(), 
+                            p['name'] ?? '', 
+                            p['category_name'] ?? '', 
+                            '${p['price']}đ', 
+                            p['stock'] ?? 0, 
+                            p['is_available'] ?? true
+                          ),
+                          const Divider(height: 1),
+                        ],
+                      )),
                     ],
-                  )),
-                ],
+                  ),
+                ),
               ),
             ),
           )
@@ -452,10 +502,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
-
-  // ==========================================
-  // CRUD LOGIC & DIALOGS
-  // ==========================================
 
   void _showUserFormDialog(Map<String, dynamic>? user) {
     final isEditing = user != null;
@@ -477,7 +523,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             DropdownButtonFormField<String>(
               value: role,
               items: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-              onChanged: (v) => role = v!,
+              onChanged: (v) => role = v ?? 'USER',
               decoration: const InputDecoration(labelText: 'Chức vụ'),
             ),
           ],
@@ -539,7 +585,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     String imageUrl = isEditing ? product['image'] : '';
     String category = isEditing ? (product['category'] ?? 'Cà Phê') : 'Cà Phê';
     bool isAvailable = isEditing ? (product['isActive'] ?? true) : true;
-    // Đảm bảo category có trong danh sách dropdown
     final availableCategories = ['Tất cả', 'Best Seller', 'Trà Sữa', 'Cà Phê', 'Trà Trái Cây', 'Combo'];
     if (!availableCategories.contains(category)) category = 'Tất cả';
 
@@ -592,7 +637,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 DropdownButtonFormField<String>(
                   value: category,
                   items: availableCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: (v) => category = v!,
+                  onChanged: (v) => category = v ?? 'Tất cả',
                   decoration: const InputDecoration(labelText: 'Danh mục'),
                 ),
                 const SizedBox(height: 8),
@@ -821,7 +866,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isSelected ? katinatGold : Colors.white,
-        border: Border.all(color: isSelected ? katinatGold : Colors.grey[300]!),
+        border: Border.all(color: isSelected ? katinatGold : (Colors.grey[300] ?? Colors.grey)),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -847,7 +892,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildKpiCard({required String title, required String value, required IconData icon, required Color color}) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Row(
         children: [
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 28)),
@@ -876,12 +921,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(id, style: const TextStyle(fontWeight: FontWeight.w600)),
-          SizedBox(width: 120, child: Text(name, overflow: TextOverflow.ellipsis)),
-          Text(amount, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)))
+          SizedBox(width: 40, child: Text(id, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12))),
+          const SizedBox(width: 8),
+          Expanded(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+          const SizedBox(width: 8),
+          Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
+            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), 
+            child: Text(status, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold))
+          )
         ],
       ),
     );
@@ -972,7 +1023,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildSimpleTable({required List<String> headers, required List<List<String>> rows}) {
     if (rows.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Chưa có dữ liệu')));
     return Table(
-      border: TableBorder(horizontalInside: BorderSide(color: Colors.grey[100]!, width: 1)),
+      border: TableBorder(horizontalInside: BorderSide(color: Colors.grey[100] ?? Colors.grey, width: 1)),
       children: [
         TableRow(
           children: headers.map((h) => Padding(
@@ -999,30 +1050,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Flex(
+            direction: isMobile ? Axis.vertical : Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               Text('Danh sách Mã Khuyến Mãi', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+              if (isMobile) const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () => _showVoucherFormDialog(null),
                 icon: const Icon(Icons.add),
                 label: const Text('Thêm Voucher mới'),
-                style: ElevatedButton.styleFrom(backgroundColor: katinatGold, foregroundColor: Colors.black),
+                style: ElevatedButton.styleFrom(backgroundColor: katinatGold, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-            child: Column(
-              children: [
-                _buildVoucherHeader(),
-                const Divider(height: 1),
-                if (_promotions.isEmpty)
-                  const Padding(padding: EdgeInsets.all(40), child: Text('Chưa có voucher nào'))
-                else
-                  ..._promotions.map((p) => _buildVoucherRow(p)),
-              ],
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 900,
+                child: Column(
+                  children: [
+                    _buildVoucherHeader(),
+                    const Divider(height: 1),
+                    if (_promotions.isEmpty)
+                      const Padding(padding: EdgeInsets.all(40), child: Text('Chưa có voucher nào'))
+                    else
+                      ..._promotions.map((p) => _buildVoucherRow(p)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -1050,7 +1110,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildVoucherRow(Map<String, dynamic> p) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[100]!))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[100] ?? Colors.grey))),
       child: Row(
         children: [
           Expanded(flex: 2, child: Text(p['title'] ?? '')),
@@ -1062,7 +1122,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Expanded(flex: 1, child: Text(
             p['promo_type'] == 'bogo' 
               ? 'Mua ${p['buy_qty']} tặng ${p['get_qty']}'
-              : (double.tryParse(p['discount_amount']?.toString() ?? '0')! > 0 
+              : ((double.tryParse(p['discount_amount']?.toString() ?? '0') ?? 0.0) > 0 
                   ? '${p['discount_amount']}đ' 
                   : '${p['discount']}%')
           )),
@@ -1095,7 +1155,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final bodyController = TextEditingController();
     final scheduleController = TextEditingController(text: DateTime.now().add(const Duration(minutes: 5)).toString().substring(0, 16));
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Center(
         child: Container(
@@ -1201,7 +1261,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     DropdownMenuItem(value: 'discount', child: Text('Giảm giá (%) hoặc Số tiền')),
                     DropdownMenuItem(value: 'bogo', child: Text('Mua X Tặng Y')),
                   ],
-                  onChanged: (v) => setDialogState(() => promoType = v!),
+                  onChanged: (v) => setDialogState(() => promoType = v ?? 'percentage'),
                 ),
                 if (promoType == 'discount') ...[
                   TextField(controller: discountController, decoration: const InputDecoration(labelText: 'Phần trăm giảm (%)'), keyboardType: TextInputType.number),

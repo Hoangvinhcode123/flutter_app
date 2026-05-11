@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Checkbox(
                     value: _rememberMe,
-                    onChanged: (v) => setState(() => _rememberMe = v!),
+                    onChanged: (v) => setState(() => _rememberMe = v ?? false),
                     activeColor: katinatGold,
                     side: const BorderSide(color: Colors.white54),
                   ),

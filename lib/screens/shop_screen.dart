@@ -7,6 +7,7 @@ import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/product.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 import 'product_detail_screen.dart';
 
@@ -35,7 +36,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Future<void> _fetchInitialData() async {
     try {
-      final catRes = await http.get(Uri.parse('http://localhost:3000/api/categories'));
+      final catRes = await http.get(Uri.parse('http://127.0.0.1:3000/api/categories'));
       if (mounted) {
         setState(() {
           final List<dynamic> fetchedCategories = json.decode(catRes.body);
@@ -55,7 +56,7 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Future<http.Response> _fetchProducts() async {
-    String url = 'http://localhost:3000/api/products?';
+    String url = 'http://127.0.0.1:3000/api/products?';
     if (_searchQuery.isNotEmpty) url += 'search=$_searchQuery&';
     if (_selectedCategoryId != null) url += 'category_id=$_selectedCategoryId&';
 
@@ -74,13 +75,13 @@ class _ShopScreenState extends State<ShopScreen> {
     if (!auth.isLoggedIn) return;
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/wishlist'),
+        Uri.parse('http://127.0.0.1:3000/api/wishlist'),
         headers: {'Authorization': 'Bearer ${auth.token}'},
       );
       if (response.statusCode == 200) {
         final list = json.decode(response.body) as List;
         setState(() {
-          _wishlistIds = list.map((item) => item['product_id'] as int).toSet();
+          _wishlistIds = list.map((item) => int.tryParse(item['product_id']?.toString() ?? '0') ?? 0).toSet();
         });
       }
     } catch (_) {}
@@ -95,7 +96,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/wishlist/toggle'),
+        Uri.parse('http://127.0.0.1:3000/api/wishlist/toggle'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${auth.token}',
@@ -125,6 +126,7 @@ class _ShopScreenState extends State<ShopScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
           setState(() => _isLoading = true);
@@ -140,43 +142,76 @@ class _ShopScreenState extends State<ShopScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        bool isNarrow = constraints.maxWidth < 600;
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'CỬA HÀNG',
-                              style: GoogleFonts.barlowCondensed(color: katinatGold, fontSize: 48, fontWeight: FontWeight.bold, letterSpacing: 2.0),
-                            ),
-                            const SizedBox(height: 10),
-                            Text('Thưởng thức phong vị mới ngay tại nhà', style: GoogleFonts.montserrat(color: Colors.grey[700], fontSize: 16)),
+                            if (isNarrow) ...[
+                              Text(
+                                'CỬA HÀNG',
+                                style: GoogleFonts.barlowCondensed(color: katinatGold, fontSize: 40, fontWeight: FontWeight.bold, letterSpacing: 2.0),
+                              ),
+                              const SizedBox(height: 10),
+                              Text('Thưởng thức phong vị mới ngay tại nhà', style: GoogleFonts.montserrat(color: Colors.grey[700], fontSize: 14)),
+                              const SizedBox(height: 20),
+                              TextField(
+                                controller: _searchController,
+                                onChanged: (v) {
+                                  setState(() {
+                                    _searchQuery = v;
+                                    _isLoading = true;
+                                  });
+                                  _fetchProducts();
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Tìm kiếm sản phẩm...',
+                                  prefixIcon: const Icon(Icons.search, color: katinatGold),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.grey[300]!)),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                ),
+                              ),
+                            ] else ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'CỬA HÀNG',
+                                        style: GoogleFonts.barlowCondensed(color: katinatGold, fontSize: 48, fontWeight: FontWeight.bold, letterSpacing: 2.0),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text('Thưởng thức phong vị mới ngay tại nhà', style: GoogleFonts.montserrat(color: Colors.grey[700], fontSize: 16)),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    width: 300,
+                                    child: TextField(
+                                      controller: _searchController,
+                                      onChanged: (v) {
+                                        setState(() {
+                                          _searchQuery = v;
+                                          _isLoading = true;
+                                        });
+                                        _fetchProducts();
+                                      },
+                                      decoration: InputDecoration(
+                                        hintText: 'Tìm kiếm sản phẩm...',
+                                        prefixIcon: const Icon(Icons.search, color: katinatGold),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.grey[300] ?? Colors.grey)),
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
-                        ),
-                        // Search Bar
-                        SizedBox(
-                          width: 300,
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (v) {
-                              setState(() {
-                                _searchQuery = v;
-                                _isLoading = true;
-                              });
-                              _fetchProducts();
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Tìm kiếm sản phẩm...',
-                              prefixIcon: const Icon(Icons.search, color: katinatGold),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.grey[300]!)),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.grey[300]!)),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: katinatGold)),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                            ),
-                          ),
-                        ),
-                      ],
+                        );
+                      }
                     ),
                     const SizedBox(height: 30),
                     // Categories Chips
@@ -220,23 +255,27 @@ class _ShopScreenState extends State<ShopScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 300,
-                          childAspectRatio: 0.7,
-                          crossAxisSpacing: 20,
-                          mainAxisSpacing: 30,
+                          maxCrossAxisExtent: 200,
+                          childAspectRatio: 0.5, // Tăng thêm chiều cao thẻ (từ 0.55 -> 0.5)
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 20,
                         ),
                         itemCount: _products.length,
                         itemBuilder: (context, index) {
                           final p = _products[index];
                           final productObj = Product(
-                            id: p['id'].toString(),
+                            id: p['id']?.toString() ?? '0',
                             categoryId: p['category_id']?.toString() ?? '1',
-                            sku: p['sku'] ?? p['id'].toString(),
-                            name: p['name'],
-                            slug: p['slug'] ?? p['name'],
+                            sku: p['sku'] ?? p['id']?.toString() ?? 'N/A',
+                            name: p['name'] ?? 'Sản phẩm mới',
+                            slug: p['slug'] ?? p['name'] ?? 'san-pham',
                             description: p['description'] ?? '',
-                            basePrice: double.parse(p['price'].toString()),
-                            primaryImageUrl: p['image_url'] ?? '',
+                            basePrice: double.tryParse(p['price']?.toString() ?? '0') ?? 0.0,
+                            primaryImageUrl: p['image_url'] != null && p['image_url'].toString().isNotEmpty 
+                                ? (p['image_url'].toString().startsWith('http') || p['image_url'].toString().startsWith('assets/')
+                                    ? p['image_url'].toString()
+                                    : 'http://127.0.0.1:3000${p['image_url']}')
+                                : '',
                             createdAt: DateTime.now(),
                           );
 
@@ -261,76 +300,95 @@ class _ShopScreenState extends State<ShopScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Colors.grey[200] ?? Colors.grey),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 3,
-            child: GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ProductDetailScreen(product: product, dbId: dbId))),
-              child: Stack(
-                children: [
-                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                    child: product.primaryImageUrl.startsWith('http')
-                      ? Image.network(
-                          product.primaryImageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[100], child: const Icon(Icons.coffee, size: 50, color: Colors.grey)),
-                        )
-                      : Image.asset(
-                          product.primaryImageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[100], child: const Icon(Icons.coffee, size: 50, color: Colors.grey)),
-                        ),
-                  ),
-                  Positioned(
-                    top: 8, right: 8,
-                    child: Container(
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), shape: BoxShape.circle),
-                      child: IconButton(
-                        icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? Colors.red : Colors.grey),
-                        onPressed: () => _toggleWishlist(dbId),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(product.name, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double totalHeight = constraints.maxHeight;
+          final double imageHeight = totalHeight * 0.6; // 60% cho ảnh
+          final double infoHeight = totalHeight * 0.4;  // 40% cho thông tin
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Phần ảnh
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ProductDetailScreen(product: product, dbId: dbId))),
+                child: SizedBox(
+                  height: imageHeight,
+                  child: Stack(
                     children: [
-                      Text('${product.basePrice.toStringAsFixed(0)}đ', style: GoogleFonts.montserrat(color: katinatGold, fontWeight: FontWeight.bold, fontSize: 16)),
-                      IconButton(
-                        onPressed: () {
-                          Provider.of<CartProvider>(context, listen: false).addItem(product);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã thêm ${product.name} vào giỏ!'), duration: const Duration(seconds: 1)));
-                        },
-                        icon: const Icon(Icons.add_shopping_cart, color: katinatGold),
+                       Positioned.fill(
+                         child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                          child: product.primaryImageUrl.startsWith('http')
+                            ? Image.network(
+                                product.primaryImageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[100], child: const Icon(Icons.coffee, size: 50, color: Colors.grey)),
+                              )
+                            : Image.asset(
+                                product.primaryImageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[100], child: const Icon(Icons.coffee, size: 50, color: Colors.grey)),
+                              ),
+                        ),
+                       ),
+                      Positioned(
+                        top: 8, right: 8,
+                        child: Container(
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), shape: BoxShape.circle),
+                          child: IconButton(
+                            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? Colors.red : Colors.grey),
+                            onPressed: () => _toggleWishlist(dbId),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Phần thông tin
+              SizedBox(
+                height: infoHeight,
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          product.name, 
+                          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13),
+                          maxLines: 2, 
+                          overflow: TextOverflow.ellipsis
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${product.basePrice.toStringAsFixed(0)}đ', style: GoogleFonts.montserrat(color: katinatGold, fontWeight: FontWeight.bold, fontSize: 15)),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              Provider.of<CartProvider>(context, listen: false).addItem(product);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã thêm ${product.name} vào giỏ!'), duration: const Duration(seconds: 1)));
+                            },
+                            icon: const Icon(Icons.add_shopping_cart, color: katinatGold, size: 18),
+                          )
+                        ],
                       )
                     ],
-                  )
-                ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        }
       ),
     );
   }

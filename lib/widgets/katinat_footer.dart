@@ -13,15 +13,18 @@ class KatinatFooter extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                'ĐƯƠNG',
-                style: GoogleFonts.barlowCondensed(
-                  color: Colors.white.withOpacity(0.1),
-                  fontSize: 80,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 8.0,
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 100),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'ĐƯƠNG',
+                  style: GoogleFonts.barlowCondensed(
+                    color: Colors.white.withOpacity(0.1),
+                    fontSize: 80,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8.0,
+                  ),
                 ),
               ),
             ),

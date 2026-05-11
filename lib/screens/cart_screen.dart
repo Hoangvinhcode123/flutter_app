@@ -6,6 +6,7 @@ import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/order.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class CartScreen extends StatelessWidget {
@@ -19,74 +20,48 @@ class CartScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {
           final items = cartProvider.items;
           final total = cartProvider.totalAmount;
-          
+          final bool isMobile = MediaQuery.of(context).size.width < 800;
+
           return SingleChildScrollView(
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Row(
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 32.0),
+                  child: Flex(
+                    direction: isMobile ? Axis.vertical : Axis.horizontal,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Cart Items Left Pane
-                      Expanded(
-                        flex: 2,
-                        child: Column(
+                      // Cart Items Pane
+                      if (isMobile)
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'GIỎ HÀNG CỦA BẠN (${items.length} món)',
-                              style: GoogleFonts.barlowCondensed(
-                                color: katinatBlue,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
+                            _buildCartHeader(katinatBlue, items.length, isMobile),
                             const SizedBox(height: 24),
-                            if (items.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40.0),
-                                child: Center(
-                                  child: Column(
-                                    children: [
-                                      Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
-                                      const SizedBox(height: 16),
-                                      Text('Giỏ hàng trống. Hãy mua sắm nhé!', style: GoogleFonts.montserrat(fontSize: 16, color: Colors.grey[500])),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            else
-                              ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: items.length,
-                                separatorBuilder: (c, i) => const Divider(height: 40),
-                                itemBuilder: (context, index) {
-                                  final item = items[index];
-                                  final formattedPrice = '${item.unitPrice.toStringAsFixed(0)}.000đ'.replaceAll('000.000', '000');
-                                  
-                                  return _buildCartItem(
-                                    context,
-                                    item: item,
-                                    priceFormatted: formattedPrice,
-                                    // Bóc ID gốc của món nướng ghép vào asset URL
-                                    imageUrl: 'assets/images/sp_${item.productId.replaceAll("p", "")}.jpg',
-                                  );
-                                },
-                              ),
+                            _buildCartItemsList(items, cartProvider),
                           ],
+                        )
+                      else
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildCartHeader(katinatBlue, items.length, isMobile),
+                              const SizedBox(height: 24),
+                              _buildCartItemsList(items, cartProvider),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 40),
-                      // Order Summary Right Pane
-                      Expanded(
-                        flex: 1,
+                      if (!isMobile) const SizedBox(width: 40) else const SizedBox(height: 40),
+                      // Order Summary Pane
+                      SizedBox(
+                        width: isMobile ? double.infinity : null,
                         child: Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
@@ -105,7 +80,6 @@ class CartScreen extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-                                // Voucher Section in Cart
                                 _buildSummaryRow('Tạm tính', _formatPrice(total)),
                                 const SizedBox(height: 12),
                                 _buildSummaryRow('Phí vận chuyển', 'Liên hệ'),
@@ -233,40 +207,91 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                'Size M, Đá bình thường',
-                style: GoogleFonts.montserrat(
-                  color: Colors.grey[600],
-                  fontSize: 14,
+              Flexible(
+                child: Text(
+                  'Size M, Đá bình thường',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(4),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(icon: const Icon(Icons.remove, size: 16), onPressed: () => cart.decrementQuantity(item.productId), constraints: const BoxConstraints()),
+                          Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          IconButton(icon: const Icon(Icons.add, size: 16), onPressed: () => cart.incrementQuantity(item.productId), constraints: const BoxConstraints()),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        IconButton(icon: const Icon(Icons.remove, size: 16), onPressed: () => cart.decrementQuantity(item.productId), constraints: const BoxConstraints()),
-                        Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        IconButton(icon: const Icon(Icons.add, size: 16), onPressed: () => cart.incrementQuantity(item.productId), constraints: const BoxConstraints()),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  TextButton(
-                    onPressed: () => cart.removeItem(item.productId),
-                    child: const Text('Xoá', style: TextStyle(color: Colors.redAccent)),
-                  )
-                ],
+                    const SizedBox(width: 10),
+                    TextButton(
+                      onPressed: () => cart.removeItem(item.productId),
+                      child: const Text('Xoá', style: TextStyle(color: Colors.redAccent)),
+                    )
+                  ],
+                ),
               )
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCartHeader(Color blue, int count, bool isMobile) {
+    return Text(
+      'GIỎ HÀNG CỦA BẠN ($count món)',
+      style: GoogleFonts.barlowCondensed(
+        color: blue,
+        fontSize: isMobile ? 28 : 32,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildCartItemsList(List<OrderItem> items, CartProvider cartProvider) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40.0),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text('Giỏ hàng trống. Hãy mua sắm nhé!', style: GoogleFonts.montserrat(fontSize: 16, color: Colors.grey[500])),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (c, i) => const Divider(height: 40),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final formattedPrice = _formatPrice(item.unitPrice * item.quantity);
+        return _buildCartItem(
+          context,
+          item: item,
+          priceFormatted: formattedPrice,
+          imageUrl: 'assets/images/Sp_${item.productId.replaceAll("p", "")}.jpg',
+        );
+      },
     );
   }
 
@@ -278,9 +303,11 @@ class CartScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.montserrat(color: Colors.grey[700]),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.montserrat(color: Colors.grey[700]),
+          ),
         ),
         Text(
           value,

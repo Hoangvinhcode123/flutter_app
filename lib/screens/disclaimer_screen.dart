@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class DisclaimerScreen extends StatelessWidget {
@@ -14,6 +15,7 @@ class DisclaimerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

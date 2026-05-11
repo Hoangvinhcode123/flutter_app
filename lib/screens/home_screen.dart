@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_hero_banner.dart';
 import '../widgets/katinat_about_section.dart';
 import '../widgets/katinat_promo_section.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends StatelessWidget {
     return const Scaffold(
       backgroundColor: Colors.white,
       appBar: KatinatAppBar(),
+      drawer: KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

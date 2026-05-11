@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class OrdersHistoryScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _OrdersHistoryScreenState extends State<OrdersHistoryScreen> {
 
     return Scaffold(
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

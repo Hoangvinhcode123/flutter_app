@@ -7,6 +7,7 @@ import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/product.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -33,7 +34,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _fetchReviews() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:3000/api/products/${widget.dbId}/reviews'));
+      final response = await http.get(Uri.parse('http://127.0.0.1:3000/api/products/${widget.dbId}/reviews'));
       if (response.statusCode == 200) {
         setState(() {
           _reviews = json.decode(response.body);
@@ -51,7 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/reviews'),
+        Uri.parse('http://127.0.0.1:3000/api/reviews'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${auth.token}',
@@ -81,67 +82,103 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     const Color katinatBlue = Color(0xFF132A38);
     const Color katinatGold = Color(0xFFD3A374);
 
+    final bool isMobile = MediaQuery.of(context).size.width < 800;
+
     return Scaffold(
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 40, 
+                vertical: isMobile ? 30 : 60
+              ),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
-                  child: Row(
+                  child: Flex(
+                    direction: isMobile ? Axis.vertical : Axis.horizontal,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Image
-                      Expanded(
+                      SizedBox(
+                        width: isMobile ? double.infinity : null,
+                        height: isMobile ? 300 : null,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                         child: widget.product.primaryImageUrl.startsWith('http')
-                            ? Image.network(
-                                widget.product.primaryImageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(height: 500, color: Colors.grey[100], child: const Icon(Icons.coffee, size: 100, color: Colors.grey)),
-                              )
-                            : Image.asset(
-                                widget.product.primaryImageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(height: 500, color: Colors.grey[100], child: const Icon(Icons.coffee, size: 100, color: Colors.grey)),
-                              ),
+                          child: widget.product.primaryImageUrl.startsWith('http')
+                              ? Image.network(
+                                  widget.product.primaryImageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(height: 500, color: Colors.grey[100], child: const Icon(Icons.coffee, size: 100, color: Colors.grey)),
+                                )
+                              : Image.asset(
+                                  widget.product.primaryImageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(height: 500, color: Colors.grey[100], child: const Icon(Icons.coffee, size: 100, color: Colors.grey)),
+                                ),
                         ),
                       ),
-                      const SizedBox(width: 60),
+                      if (!isMobile) const SizedBox(width: 60) else const SizedBox(height: 30),
                       // Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(widget.product.name, style: GoogleFonts.barlowCondensed(fontSize: 48, fontWeight: FontWeight.bold, color: katinatBlue)),
-                            const SizedBox(height: 10),
-                            Text('${widget.product.basePrice.toStringAsFixed(0)}đ', style: GoogleFonts.montserrat(fontSize: 32, fontWeight: FontWeight.bold, color: katinatGold)),
-                            const SizedBox(height: 20),
-                            const Divider(),
-                            const SizedBox(height: 20),
-                            Text(widget.product.description.isEmpty ? 'Hương vị cà phê truyền thống được chế biến từ những hạt cà phê Arabica và Robusta tuyển chọn, mang đến trải nghiệm tuyệt vời cho bạn.' : widget.product.description, style: GoogleFonts.montserrat(fontSize: 16, height: 1.6, color: Colors.grey[700])),
-                            const SizedBox(height: 40),
-                            Row(
+                      // Details
+                      isMobile 
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(widget.product.name, style: GoogleFonts.barlowCondensed(fontSize: 32, fontWeight: FontWeight.bold, color: katinatBlue)),
+                              const SizedBox(height: 10),
+                              Text('${widget.product.basePrice.toStringAsFixed(0)}đ', style: GoogleFonts.montserrat(fontSize: 24, fontWeight: FontWeight.bold, color: katinatGold)),
+                              const SizedBox(height: 20),
+                              const Divider(),
+                              const SizedBox(height: 20),
+                              Text(widget.product.description.isEmpty ? 'Hương vị cà phê truyền thống được chế biến từ những hạt cà phê Arabica và Robusta tuyển chọn, mang đến trải nghiệm tuyệt vời cho bạn.' : widget.product.description, style: GoogleFonts.montserrat(fontSize: 16, height: 1.6, color: Colors.grey[700])),
+                              const SizedBox(height: 40),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Provider.of<CartProvider>(context, listen: false).addItem(widget.product);
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm vào giỏ hàng')));
+                                  },
+                                  style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(vertical: 20)),
+                                  child: const Text('THÊM VÀO GIỎ HÀNG', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      Provider.of<CartProvider>(context, listen: false).addItem(widget.product);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm vào giỏ hàng')));
-                                    },
-                                    style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(vertical: 20)),
-                                    child: const Text('THÊM VÀO GIỎ HÀNG', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  ),
+                                Text(widget.product.name, style: GoogleFonts.barlowCondensed(fontSize: 48, fontWeight: FontWeight.bold, color: katinatBlue)),
+                                const SizedBox(height: 10),
+                                Text('${widget.product.basePrice.toStringAsFixed(0)}đ', style: GoogleFonts.montserrat(fontSize: 32, fontWeight: FontWeight.bold, color: katinatGold)),
+                                const SizedBox(height: 20),
+                                const Divider(),
+                                const SizedBox(height: 20),
+                                Text(widget.product.description.isEmpty ? 'Hương vị cà phê truyền thống được chế biến từ những hạt cà phê Arabica và Robusta tuyển chọn, mang đến trải nghiệm tuyệt vời cho bạn.' : widget.product.description, style: GoogleFonts.montserrat(fontSize: 16, height: 1.6, color: Colors.grey[700])),
+                                const SizedBox(height: 40),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          Provider.of<CartProvider>(context, listen: false).addItem(widget.product);
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm vào giỏ hàng')));
+                                        },
+                                        style: ElevatedButton.styleFrom(backgroundColor: katinatBlue, padding: const EdgeInsets.symmetric(vertical: 20)),
+                                        child: const Text('THÊM VÀO GIỎ HÀNG', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
                     ],
                   ),
                 ),
@@ -191,7 +228,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildReviewForm(Color gold, Color blue) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200] ?? Colors.grey)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -233,12 +270,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               children: [
                 Row(
                   children: [
-                    Text(r['user_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(r['user_name'] ?? 'Khách hàng', style: const TextStyle(fontWeight: FontWeight.bold)),
                     const Spacer(),
-                    Text(r['created_at'].toString().split('T')[0], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                    Text((r['created_at']?.toString() ?? DateTime.now().toString()).split('T')[0], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                   ],
                 ),
-                Row(children: List.generate(5, (i) => Icon(Icons.star, size: 14, color: i < r['rating'] ? Colors.orange : Colors.grey[300]))),
+                Row(children: List.generate(5, (i) => Icon(Icons.star, size: 14, color: i < (r['rating'] ?? 5) ? Colors.orange : Colors.grey[300]))),
                 const SizedBox(height: 8),
                 Text(r['comment'] ?? ''),
               ],

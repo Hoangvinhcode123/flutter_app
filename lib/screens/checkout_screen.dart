@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cart = Provider.of<CartProvider>(context, listen: false);
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/promotions/validate'),
+        Uri.parse('http://127.0.0.1:3000/api/promotions/validate'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'code': _voucherController.text, 
@@ -80,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/orders'),
+        Uri.parse('http://127.0.0.1:3000/api/orders'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${auth.token}',
@@ -152,6 +153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -177,11 +179,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildCheckoutForm(CartProvider cart, double subtotal, double finalTotal, Color katinatBlue, Color katinatGold) {
-    return Row(
+    final bool isMobile = MediaQuery.of(context).size.width < 800;
+
+    return Flex(
+      direction: isMobile ? Axis.vertical : Axis.horizontal,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 2,
+          flex: isMobile ? 0 : 2,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -201,9 +206,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
         ),
-        const SizedBox(width: 40),
+        if (!isMobile) const SizedBox(width: 40) else const SizedBox(height: 40),
         Expanded(
-          flex: 1,
+          flex: isMobile ? 0 : 1,
           child: Column(
             children: [
               Container(
@@ -381,7 +386,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, 
         children: [
-          Text(label), 
+          Expanded(child: Text(label)), 
           Text(_formatPrice(value), style: TextStyle(color: color, fontWeight: color != null ? FontWeight.bold : FontWeight.normal))
         ]
       ),

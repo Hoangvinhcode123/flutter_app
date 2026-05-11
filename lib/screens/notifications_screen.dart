@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../providers/auth_provider.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/notifications'),
+        Uri.parse('http://127.0.0.1:3000/api/notifications'),
         headers: {'Authorization': 'Bearer ${auth.token}'},
       );
       if (response.statusCode == 200) {
@@ -46,7 +47,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     try {
       await http.put(
-        Uri.parse('http://localhost:3000/api/notifications/$id/read'),
+        Uri.parse('http://127.0.0.1:3000/api/notifications/$id/read'),
         headers: {'Authorization': 'Bearer ${auth.token}'},
       );
       _fetchNotifications();
@@ -59,6 +60,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

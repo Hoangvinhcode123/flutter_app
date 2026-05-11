@@ -36,15 +36,18 @@ class KatinatPromoSection extends StatelessWidget {
         Container(
           color: bgBeige,
           padding: const EdgeInsets.symmetric(vertical: 60.0),
-          child: Column(
-            children: [
-              Padding(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool isMobile = constraints.maxWidth < 800;
+              return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Row(
+                child: Flex(
+                  direction: isMobile ? Axis.vertical : Axis.horizontal,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      flex: 3,
+                    SizedBox(
+                      width: isMobile ? double.infinity : null,
+                      height: isMobile ? 250 : null,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.asset(
@@ -59,9 +62,9 @@ class KatinatPromoSection extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 24),
-                    Flexible(
-                      flex: 2,
+                    if (!isMobile) const SizedBox(width: 40) else const SizedBox(height: 30),
+                    Expanded(
+                      flex: isMobile ? 0 : 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -69,7 +72,7 @@ class KatinatPromoSection extends StatelessWidget {
                             'Cửa Hàng',
                             style: GoogleFonts.playfairDisplay(
                               color: katinatGold,
-                              fontSize: 28,
+                              fontSize: isMobile ? 24 : 28,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -78,7 +81,7 @@ class KatinatPromoSection extends StatelessWidget {
                             'Lấy cảm hứng từ các vùng đất trên thế giới, ĐƯƠNG tạo ra không gian mở và thân thiện nhằm kết nối và ghi lại những khoảnh khắc tươi vui trong lúc thưởng thức.',
                             style: GoogleFonts.montserrat(
                               color: katinatGold.withOpacity(0.8),
-                              fontSize: 13,
+                              fontSize: 14,
                               height: 1.6,
                             ),
                           ),
@@ -87,8 +90,8 @@ class KatinatPromoSection extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ],
+              );
+            }
           ),
         ),
       ],

@@ -20,7 +20,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/auth/login'),
+        Uri.parse('http://127.0.0.1:3000/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
@@ -29,12 +29,18 @@ class AuthProvider extends ChangeNotifier {
         final data = json.decode(response.body);
         _token = data['token'];
         _rawUser = data['user'];
-        _currentUser = _mapUser(_rawUser!);
+        if (_rawUser != null) {
+          _currentUser = _mapUser(_rawUser!);
+        }
 
         // Save to Local Storage
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', _token!);
-        await prefs.setString('user_data', json.encode(_rawUser));
+        if (_token != null) {
+          await prefs.setString('token', _token!);
+        }
+        if (_rawUser != null) {
+          await prefs.setString('user_data', json.encode(_rawUser));
+        }
         
         notifyListeners();
       } else {
@@ -50,9 +56,14 @@ class AuthProvider extends ChangeNotifier {
     if (!prefs.containsKey('token')) return false;
 
     _token = prefs.getString('token');
-    final userData = json.decode(prefs.getString('user_data')!);
+    final userDataStr = prefs.getString('user_data');
+    if (userDataStr == null) return false;
+
+    final userData = json.decode(userDataStr);
     _rawUser = userData;
-    _currentUser = _mapUser(_rawUser!);
+    if (_rawUser != null) {
+      _currentUser = _mapUser(_rawUser!);
+    }
     
     notifyListeners();
     return true;
@@ -72,7 +83,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
     final response = await http.put(
-      Uri.parse('http://localhost:3000/api/auth/profile'),
+      Uri.parse('http://127.0.0.1:3000/api/auth/profile'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_token',
@@ -82,7 +93,9 @@ class AuthProvider extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       _rawUser = json.decode(response.body)['user'];
-      _currentUser = _mapUser(_rawUser!);
+      if (_rawUser != null) {
+        _currentUser = _mapUser(_rawUser!);
+      }
       
       // Update Local Storage
       final prefs = await SharedPreferences.getInstance();
@@ -96,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<List<dynamic>> fetchMyOrders() async {
     final response = await http.get(
-      Uri.parse('http://localhost:3000/api/orders'),
+      Uri.parse('http://127.0.0.1:3000/api/orders'),
       headers: {'Authorization': 'Bearer $_token'},
     );
 

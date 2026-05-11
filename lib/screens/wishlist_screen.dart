@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../providers/auth_provider.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class WishlistScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/wishlist'),
+        Uri.parse('http://127.0.0.1:3000/api/wishlist'),
         headers: {'Authorization': 'Bearer ${auth.token}'},
       );
 
@@ -54,7 +55,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/wishlist/toggle'),
+        Uri.parse('http://127.0.0.1:3000/api/wishlist/toggle'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${auth.token}',
@@ -82,6 +83,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
     return Scaffold(
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

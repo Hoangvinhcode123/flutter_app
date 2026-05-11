@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/katinat_app_bar.dart';
+import '../widgets/katinat_drawer.dart';
 import '../widgets/katinat_footer.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController = TextEditingController(text: user?['name'] ?? '');
     _phoneController = TextEditingController(text: user?['phone'] ?? '');
     _emailController = TextEditingController(text: user?['email'] ?? '');
-    _birthdayController = TextEditingController(text: user?['birthday'] != null ? user!['birthday'].toString().split('T')[0] : '');
+    _birthdayController = TextEditingController(text: (user != null && user['birthday'] != null) ? user['birthday'].toString().split('T')[0] : '');
     _selectedGender = user?['gender'] ?? 'Nam';
   }
 
@@ -69,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: const KatinatAppBar(),
+      drawer: const KatinatDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -140,10 +142,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text('Giới tính', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
                             Row(
                               children: [
-                                Radio<String>(value: 'Nam', groupValue: _selectedGender, onChanged: (v) => setState(() => _selectedGender = v!)),
+                                Radio<String>(value: 'Nam', groupValue: _selectedGender, onChanged: (v) => setState(() => _selectedGender = v ?? 'Nam')),
                                 const Text('Nam'),
                                 const SizedBox(width: 20),
-                                Radio<String>(value: 'Nữ', groupValue: _selectedGender, onChanged: (v) => setState(() => _selectedGender = v!)),
+                                Radio<String>(value: 'Nữ', groupValue: _selectedGender, onChanged: (v) => setState(() => _selectedGender = v ?? 'Nữ')),
                                 const Text('Nữ'),
                               ],
                             ),
